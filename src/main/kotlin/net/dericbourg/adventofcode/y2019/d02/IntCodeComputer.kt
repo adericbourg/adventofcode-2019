@@ -8,9 +8,13 @@ class IntCodeComputer {
     }
 
     fun restoreGravity(intCodeProgram: List<Int>): List<Int> {
+        return reset(intCodeProgram, 12, 2)
+    }
+
+    fun reset(intCodeProgram: List<Int>, noun: Int, verb: Int): List<Int> {
         val buffer = intCodeProgram.toMutableList()
-        buffer[1] = 12
-        buffer[2] = 2
+        buffer[1] = noun
+        buffer[2] = verb
         return buffer.toList()
     }
 
