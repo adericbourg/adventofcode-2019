@@ -7,11 +7,12 @@ fun main() {
 
     val mapper = InstructionMapper()
     val pathComputer = PathComputer()
-    val distance = ManhattanDistance()
+    val distance = DistanceComputer()
 
     val instructions = mapper.map(inputContent)
     val paths = pathComputer.compute(instructions)
     val distances = distance.computeIntersectionDistances(paths)
 
-    println("Part 1: ${distances.min()}")
+    println("Part 1: ${distances.map { it.manhattan }.min()}")
+    println("Part 2: ${distances.map { it.totalSteps }.min()}")
 }
