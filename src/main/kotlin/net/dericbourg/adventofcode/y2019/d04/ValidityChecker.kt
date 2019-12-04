@@ -3,12 +3,14 @@ package net.dericbourg.adventofcode.y2019.d04
 class ValidityChecker {
     fun isValid(password: Int): Boolean {
         val chars = password.toString().toCharArray()
-        return containsDouble(chars) && isIncreasing(chars)
+        return containsStrictDouble(chars) && isIncreasing(chars)
     }
 
-    private fun containsDouble(digits: CharArray): Boolean {
-        val uniqueDigitCount = digits.toSet()
-        return digits.size > uniqueDigitCount.size
+    private fun containsStrictDouble(digits: CharArray): Boolean {
+        return digits.fold(HashMap<Char, Int>()) { map: MutableMap<Char, Int>, digit: Char ->
+            map[digit] = map.getOrDefault(digit, 0) + 1
+            map
+        }.values.contains(2)
     }
 
     private fun isIncreasing(digits: CharArray): Boolean {
