@@ -13,8 +13,7 @@ class IntCodeComputer {
             when (val operation = bindOperation(opCode)) {
                 is Operation.Stop -> return computationBuffer.toList()
                 else -> {
-                    operation.apply(computationBuffer, loopIndex)
-                    loopIndex += operation.offset
+                    loopIndex = operation.apply(computationBuffer, loopIndex)
                 }
             }
         }
@@ -32,8 +31,12 @@ class IntCodeComputer {
                     "02" -> Multiplication(modes)
                     "03" -> Input
                     "04" -> Output
+                    "05" -> JumpIfTrue(modes)
+                    "06" -> JumpIfFalse(modes)
+                    "07" -> LessThan(modes)
+                    "08" -> Equals(modes)
                     "99" -> Stop
-                    else -> throw IllegalArgumentException("Invalid operation opcode: '$opCode'")
+                    else -> throw IllegalArgumentException("Invalid opcode: '$opCode'")
                 }
             }
 
@@ -54,11 +57,11 @@ class IntCodeComputer {
             }
         }
 
-        abstract fun apply(instructions: MutableList<Int>, currentIndex: Int)
-        abstract val offset: Int
+        abstract fun apply(instructions: MutableList<Int>, currentIndex: Int): Int
+        protected abstract val offset: Int
 
         class Addition(modes: Array<Mode>) : Operation(modes) {
-            override fun apply(instructions: MutableList<Int>, currentIndex: Int) {
+            override fun apply(instructions: MutableList<Int>, currentIndex: Int): Int {
                 val param1 = instructions[currentIndex + 1]
                 val param2 = instructions[currentIndex + 2]
                 val param3 = instructions[currentIndex + 3]
@@ -68,6 +71,8 @@ class IntCodeComputer {
                 val targetIndex = param3 // FIXME?
 
                 instructions[targetIndex] = a + b
+
+                return currentIndex + offset
             }
 
             override val offset: Int
@@ -75,7 +80,7 @@ class IntCodeComputer {
         }
 
         class Multiplication(modes: Array<Mode>) : Operation(modes) {
-            override fun apply(instructions: MutableList<Int>, currentIndex: Int) {
+            override fun apply(instructions: MutableList<Int>, currentIndex: Int): Int {
                 val param1 = instructions[currentIndex + 1]
                 val param2 = instructions[currentIndex + 2]
                 val param3 = instructions[currentIndex + 3]
@@ -85,6 +90,8 @@ class IntCodeComputer {
                 val targetIndex = param3 // FIXME?
 
                 instructions[targetIndex] = a * b
+
+                return currentIndex + offset
             }
 
             override val offset: Int
@@ -92,11 +99,13 @@ class IntCodeComputer {
         }
 
         object Input : Operation(emptyArray()) {
-            private const val Input = 1
+            private const val Input = 5
 
-            override fun apply(instructions: MutableList<Int>, currentIndex: Int) {
+            override fun apply(instructions: MutableList<Int>, currentIndex: Int): Int {
                 val target = instructions[currentIndex + 1]
                 instructions[target] = Input
+
+                return currentIndex + offset
             }
 
             override val offset: Int
@@ -105,17 +114,87 @@ class IntCodeComputer {
 
         object Output : Operation(emptyArray()) {
 
-            override fun apply(instructions: MutableList<Int>, currentIndex: Int) {
+            override fun apply(instructions: MutableList<Int>, currentIndex: Int): Int {
                 val parameter = instructions[currentIndex + 1]
                 println(instructions[parameter])
+
+                return currentIndex + offset
             }
 
             override val offset: Int
                 get() = 2
         }
 
+        class JumpIfTrue(modes: Array<Mode>) : Operation(modes) {
+            override fun apply(instructions: MutableList<Int>, currentIndex: Int): Int {
+                val param1 = instructions[currentIndex + 1]
+                val param2 = instructions[currentIndex + 2]
+                return when (modes[0].getValue(instructions, param1)) {
+                    0 -> currentIndex + offset
+                    else -> {
+                        param2
+                    }
+                }
+            }
+
+            override val offset: Int
+                get() = 3
+        }
+
+        class JumpIfFalse(modes: Array<Mode>) : Operation(modes) {
+            override fun apply(instructions: MutableList<Int>, currentIndex: Int): Int {
+                val param1 = instructions[currentIndex + 1]
+                val param2 = instructions[currentIndex + 2]
+                return when (modes[0].getValue(instructions, param1)) {
+                    0 -> {
+                        param2
+                    }
+                    else -> currentIndex + offset
+                }
+            }
+
+            override val offset: Int
+                get() = 3
+        }
+
+        class LessThan(modes: Array<Mode>) : Operation(modes) {
+            override fun apply(instructions: MutableList<Int>, currentIndex: Int): Int {
+                val param1 = instructions[currentIndex + 1]
+                val param2 = instructions[currentIndex + 2]
+                val param3 = instructions[currentIndex + 3]
+
+                val a = modes[0].getValue(instructions, param1)
+                val b = modes[1].getValue(instructions, param2)
+
+                instructions[param3] = if (a < b) 1 else 0
+
+                return currentIndex + offset
+            }
+
+            override val offset: Int
+                get() = 4
+        }
+
+        class Equals(modes: Array<Mode>) : Operation(modes) {
+            override fun apply(instructions: MutableList<Int>, currentIndex: Int): Int {
+                val param1 = instructions[currentIndex + 1]
+                val param2 = instructions[currentIndex + 2]
+                val param3 = instructions[currentIndex + 3]
+
+                val a = modes[0].getValue(instructions, param1)
+                val b = modes[1].getValue(instructions, param2)
+
+                instructions[param3] = if (a == b) 1 else 0
+
+                return currentIndex + offset
+            }
+
+            override val offset: Int
+                get() = 4
+        }
+
         object Stop : Operation(emptyArray()) {
-            override fun apply(instructions: MutableList<Int>, currentIndex: Int) {
+            override fun apply(instructions: MutableList<Int>, currentIndex: Int): Int {
                 throw UnsupportedOperationException()
             }
 
